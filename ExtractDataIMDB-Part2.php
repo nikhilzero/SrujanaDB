@@ -1,41 +1,50 @@
 <?php
 // Name: Srujana
 // Date: 04/17/2024
-require_once 'simple_html_dom.php';
-require_once 'db_config.php';
-function getIMDbData($imdb_url)
-{
-    $dom = file_get_html($imdb_url);
-    if (!$dom) {
-        return false;
-    }
-    $title = $dom->find('title', 0)->plaintext;
-    $description = $dom->find("meta[name=description]", 0)->content;
-    $dom->clear();
-    unset($dom);
-    return ['title' => $title, 'description' => $description];
-}
+include('simple_html_dom.php');
+include('db_config.php'); 
 if (isset($_GET['search'])) {
-    $search_term = $_GET['search'];
-    $imdb_url = 'https://www.imdb.com/title/' . urlencode($search_term);
-    $imdb_data = getIMDbData($imdb_url);
-    if ($imdb_data) {
-        $db = new mysqli($dbHost, $dbUsername, $dbPassword, $dbName);
-        if ($db->connect_error) {
-            die("Connection failed: " . $db->connect_error);
+    $searchTerm = $_GET['search'];
+    $url = 'https://www.imdb.com/title/' . urlencode($searchTerm);
+    $data = extractDataFromIMDb($url);
+    if ($data) {
+        $conn = new mysqli($dbHost, $dbUsername, $dbPassword, $dbName);
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
         }
-        $stmt = $db->prepare("INSERT INTO ImdbDataExtract (title, description) VALUES (?, ?)");
-        $stmt->bind_param("ss", $imdb_data['title'], $imdb_data['description']);
+        $stmt = $conn->prepare("INSERT INTO ImdbDataExtract (title, description) VALUES (?, ?)");
+        $stmt->bind_param("ss", $data['title'], $data['description']);
         if ($stmt->execute()) {
-            echo "Data inserted successfully for " . htmlspecialchars($imdb_data['title']);
+            echo "New record created successfully for " . htmlspecialchars($data['title']);
         } else {
             echo "Error: " . $stmt->error;
         }
         $stmt->close();
-        $db->close();
+        $conn->close();
     } else {
-        echo "Error: Unable to fetch IMDb data for the given search term.";
+        echo "Error: Unable to access IMDb page or data not found for the search term.";
     }
 } else {
-    echo "Search query not provided.";
-} ?>
+    echo "error";
+}
+function extractDataFromIMDb($url) {
+    $html = file_get_html($url);
+
+    if (!$html) {
+        return false;
+    }
+
+    // Extracting the title and description
+    $title = $html->find('title', 0)->plaintext;
+    $description = $html->find("meta[name=description]", 0)->content;
+
+    $html->clear();
+    unset($html);
+
+    return [
+        'title' => $title,
+        'description' => $description
+    ];
+}
+
+?>
