@@ -2,7 +2,7 @@
 // Database connection configuration
 $dbHost = 'elvis.rowan.edu';
 $dbUsername = 'Chiluk58';
-$dbPassword = '1Pink3Car!';
+$dbPassword = '1Pink3car!';
 $dbName = 'Chiluk58';
 
 // Create a new MySQLi connection
